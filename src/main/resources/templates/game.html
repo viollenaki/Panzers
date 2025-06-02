@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panzers - Game Arena</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" th:href="@{/css/game.css}">
+</head>
+<body>
+    <div class="game-container">
+        <!-- Game HUD -->
+        <div class="game-hud">
+            <div class="hud-left">
+                <div class="player-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Health:</span>
+                        <div class="health-bar">
+                            <div class="health-fill" id="healthBar"></div>
+                        </div>
+                        <span id="healthText">100</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Ammo:</span>
+                        <span id="ammoText">30</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Score:</span>
+                        <span id="scoreText">0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="hud-center">
+                <div class="game-info">
+                    <div class="connection-status">
+                        <span class="status-indicator" id="statusIndicator"></span>
+                        <span id="statusText">Connecting...</span>
+                    </div>
+                    <div class="game-timer">
+                        <span>Time: </span>
+                        <span id="gameTime">00:00</span>
+                    </div>
+                    <div class="player-count">
+                        <span>Players: </span>
+                        <span id="playerCount">0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="hud-right">
+                <div class="mini-map">
+                    <!-- Optional mini-map -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Canvas -->
+        <div class="game-area">
+            <canvas id="gameCanvas" width="800" height="600"></canvas>
+        </div>
+
+        <!-- Leaderboard -->
+        <div class="leaderboard-panel">
+            <h3>Live Leaderboard</h3>
+            <div id="leaderboardList" class="leaderboard-list">
+                <!-- Dynamic leaderboard content -->
+            </div>
+        </div>
+
+        <!-- Game Controls Info -->
+        <div class="controls-info">
+            <div class="controls-panel">
+                <h4>Controls</h4>
+                <div class="control-row">
+                    <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move
+                </div>
+                <div class="control-row">
+                    <kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> Alt Move
+                </div>
+                <div class="control-row">
+                    <kbd>SPACE</kbd> Shoot
+                </div>
+                <div class="control-row">
+                    <kbd>R</kbd> Reload
+                </div>
+                <div class="control-row">
+                    <kbd>ESC</kbd> Pause
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Messages -->
+        <div id="gameMessages" class="game-messages"></div>
+    </div>
+
+    <!-- ВАЖНО: Библиотеки должны загружаться В ПРАВИЛЬНОМ ПОРЯДКЕ -->
+    <!-- 1. Сначала SockJS (для WebSocket соединения) -->
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.6.1/dist/sockjs.min.js"></script>
+    
+    <!-- 2. Затем STOMP (для messaging протокола) -->
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
+    
+    <!-- 3. В последнюю очередь ваш игровой код -->
+    <script th:src="@{/js/game.js}"></script>
+    
+    <!-- 4. Инициализация игры -->
+    <script>
+        // Ждем полной загрузки страницы и всех скриптов
+        document.addEventListener('DOMContentLoaded', function() {
+            // Проверяем, что все библиотеки загружены
+            if (typeof SockJS === 'undefined') {
+                console.error('SockJS library not loaded!');
+                return;
+            }
+            if (typeof StompJs === 'undefined') {
+                console.error('STOMP library not loaded!');
+                return;
+            }
+            
+            console.log('Initializing Tank Game...');
+            // Инициализируем игру
+            window.tankGame = new TankGame();
+        });
+    </script>
+</body>
+</html>

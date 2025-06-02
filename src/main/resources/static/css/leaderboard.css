@@ -1,0 +1,326 @@
+/* Leaderboard specific styles */
+.leaderboard-container {
+    width: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    border: 2px solid #00ff88;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+/* Tabs */
+.leaderboard-tabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    border-bottom: 2px solid rgba(0, 255, 136, 0.3);
+}
+
+.tab-button {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    padding: 1rem 2rem;
+    color: #cccccc;
+    cursor: pointer;
+    border-radius: 10px 10px 0 0;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+.tab-button:hover {
+    background: rgba(0, 255, 136, 0.2);
+    color: #ffffff;
+}
+
+.tab-button.active {
+    background: #00ff88;
+    color: #000000;
+    transform: translateY(-2px);
+}
+
+/* Tab Content */
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Leaderboard List */
+.leaderboard-list {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.leaderboard-header {
+    display: grid;
+    grid-template-columns: 80px 1fr 150px 120px;
+    gap: 1rem;
+    padding: 1rem;
+    background: rgba(0, 255, 136, 0.2);
+    font-weight: bold;
+    color: #00ff88;
+    border-bottom: 2px solid rgba(0, 255, 136, 0.3);
+}
+
+.leaderboard-items {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.leaderboard-item {
+    display: grid;
+    grid-template-columns: 80px 1fr 150px 120px;
+    gap: 1rem;
+    padding: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    transition: background 0.3s ease;
+    align-items: center;
+}
+
+.leaderboard-item:hover {
+    background: rgba(0, 255, 136, 0.1);
+}
+
+.leaderboard-item:nth-child(1) {
+    background: linear-gradient(90deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.1));
+}
+
+.leaderboard-item:nth-child(2) {
+    background: linear-gradient(90deg, rgba(192, 192, 192, 0.2), rgba(192, 192, 192, 0.1));
+}
+
+.leaderboard-item:nth-child(3) {
+    background: linear-gradient(90deg, rgba(205, 127, 50, 0.2), rgba(205, 127, 50, 0.1));
+}
+
+.rank {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #00ff88;
+    text-align: center;
+}
+
+.rank.first {
+    color: #ffd700;
+}
+
+.rank.second {
+    color: #c0c0c0;
+}
+
+.rank.third {
+    color: #cd7f32;
+}
+
+.player-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.player-avatar {
+    width: 40px;
+    height: 40px;
+    background: #00ff88;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: #000000;
+}
+
+.player-name {
+    color: #ffffff;
+    font-weight: bold;
+    font-size: 1rem;
+}
+
+.main-stat {
+    color: #00ff88;
+    font-weight: bold;
+    font-size: 1.1rem;
+    text-align: center;
+}
+
+.sub-stat {
+    color: #cccccc;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+/* Stats Summary */
+.stats-summary {
+    margin-top: 2rem;
+    text-align: center;
+}
+
+.stats-summary h3 {
+    color: #00ff88;
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.stat-card {
+    background: rgba(0, 0, 0, 0.5);
+    padding: 1.5rem;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 255, 136, 0.3);
+    transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    border-color: #00ff88;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #00ff88;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    color: #cccccc;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Loading State */
+.loading {
+    text-align: center;
+    padding: 2rem;
+    color: #cccccc;
+    font-style: italic;
+}
+
+/* No Data State */
+.no-data {
+    text-align: center;
+    padding: 2rem;
+    color: #cccccc;
+}
+
+.no-data i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    display: block;
+    color: #666666;
+}
+
+/* Scrollbar Styling */
+.leaderboard-items::-webkit-scrollbar {
+    width: 8px;
+}
+
+.leaderboard-items::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.leaderboard-items::-webkit-scrollbar-thumb {
+    background: #00ff88;
+    border-radius: 4px;
+}
+
+.leaderboard-items::-webkit-scrollbar-thumb:hover {
+    background: #00cc6a;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .leaderboard-container {
+        padding: 1rem;
+        margin: 1rem;
+    }
+
+    .leaderboard-tabs {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .tab-button {
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+        flex: 1;
+        min-width: 120px;
+    }
+
+    .leaderboard-header,
+    .leaderboard-item {
+        grid-template-columns: 60px 1fr 100px 80px;
+        gap: 0.5rem;
+        padding: 0.75rem;
+        font-size: 0.9rem;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+    }
+
+    .stat-card {
+        padding: 1rem;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+    }
+
+    .player-avatar {
+        width: 30px;
+        height: 30px;
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .leaderboard-header,
+    .leaderboard-item {
+        grid-template-columns: 50px 1fr 80px;
+        gap: 0.5rem;
+    }
+
+    .sub-stat {
+        display: none;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Animation for rank changes */
+@keyframes rankChange {
+    0% { transform: translateX(-10px); opacity: 0.5; }
+    50% { transform: translateX(5px); opacity: 0.8; }
+    100% { transform: translateX(0); opacity: 1; }
+}
+
+.rank-changed {
+    animation: rankChange 0.5s ease-out;
+}
+
+/* Special styling for current player */
+.current-player {
+    background: rgba(0, 255, 136, 0.2) !important;
+    border-left: 4px solid #00ff88;
+}
+
+.current-player .player-name {
+    color: #00ff88;
+}

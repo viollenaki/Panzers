@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panzers - Leaderboard</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" th:href="@{/css/leaderboard.css}">
+</head>
+<body>
+    <div class="main-container">
+        <header class="header">
+            <h1 class="game-title">PANZERS</h1>
+            <p class="game-subtitle">Leaderboard</p>
+        </header>
+
+        <main class="main-content">
+            <div class="leaderboard-container">
+                <div class="leaderboard-tabs">
+                    <button class="tab-button active" data-tab="score">Top Score</button>
+                    <button class="tab-button" data-tab="wins">Most Wins</button>
+                    <button class="tab-button" data-tab="kd">Best K/D</button>
+                    <button class="tab-button" data-tab="accuracy">Best Accuracy</button>
+                </div>
+
+                <div class="leaderboard-content">
+                    <!-- Top Score Tab -->
+                    <div id="score-tab" class="tab-content active">
+                        <div class="leaderboard-list">
+                            <div class="leaderboard-header">
+                                <span class="rank-header">Rank</span>
+                                <span class="name-header">Player</span>
+                                <span class="stat-header">Total Score</span>
+                                <span class="games-header">Games</span>
+                            </div>
+                            <div id="scoreLeaderboard" class="leaderboard-items">
+                                <!-- Dynamic content will be loaded here -->
+                                <div class="loading">Loading leaderboard...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Most Wins Tab -->
+                    <div id="wins-tab" class="tab-content">
+                        <div class="leaderboard-list">
+                            <div class="leaderboard-header">
+                                <span class="rank-header">Rank</span>
+                                <span class="name-header">Player</span>
+                                <span class="stat-header">Wins</span>
+                                <span class="games-header">Win Rate</span>
+                            </div>
+                            <div id="winsLeaderboard" class="leaderboard-items">
+                                <div class="loading">Loading leaderboard...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Best K/D Tab -->
+                    <div id="kd-tab" class="tab-content">
+                        <div class="leaderboard-list">
+                            <div class="leaderboard-header">
+                                <span class="rank-header">Rank</span>
+                                <span class="name-header">Player</span>
+                                <span class="stat-header">K/D Ratio</span>
+                                <span class="games-header">Kills/Deaths</span>
+                            </div>
+                            <div id="kdLeaderboard" class="leaderboard-items">
+                                <div class="loading">Loading leaderboard...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Best Accuracy Tab -->
+                    <div id="accuracy-tab" class="tab-content">
+                        <div class="leaderboard-list">
+                            <div class="leaderboard-header">
+                                <span class="rank-header">Rank</span>
+                                <span class="name-header">Player</span>
+                                <span class="stat-header">Accuracy</span>
+                                <span class="games-header">Shots Hit/Fired</span>
+                            </div>
+                            <div id="accuracyLeaderboard" class="leaderboard-items">
+                                <div class="loading">Loading leaderboard...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-summary">
+                    <h3>Global Statistics</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value" id="totalPlayers">-</div>
+                            <div class="stat-label">Total Players</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="totalGames">-</div>
+                            <div class="stat-label">Games Played</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="avgScore">-</div>
+                            <div class="stat-label">Avg Score</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="onlinePlayers">-</div>
+                            <div class="stat-label">Online Now</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <a th:href="@{/game}" class="btn btn-primary">Play Now</a>
+                <a th:href="@{/}" class="btn btn-secondary">Back to Home</a>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2024 Panzers Game. Built with Spring Boot & WebSocket</p>
+        </footer>
+    </div>
+
+    <script th:src="@{/js/leaderboard.js}"></script>
+</body>
+</html>

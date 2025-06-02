@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panzers - 2D Tank Battle Game</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="main-container">
+        <header class="header">
+            <h1 class="game-title">PANZERS</h1>
+            <p class="game-subtitle">Epic 2D Tank Battle Arena</p>
+        </header>
+
+        <main class="main-content">
+            <div class="hero-section">
+                <div class="hero-text">
+                    <h2>Join the Battle!</h2>
+                    <p>Experience intense real-time multiplayer tank combat with players from around the world.</p>
+                </div>
+                
+                <div class="game-features">
+                    <div class="feature">
+                        <h3>🎯 Real-time Combat</h3>
+                        <p>Fast-paced multiplayer battles with up to 8 players</p>
+                    </div>
+                    <div class="feature">
+                        <h3>🏆 Leaderboards</h3>
+                        <p>Compete for the top spot with detailed statistics</p>
+                    </div>
+                    <div class="feature">
+                        <h3>⚡ Instant Action</h3>
+                        <p>Jump into battle immediately - no downloads required</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <a th:href="@{/game}" class="btn btn-primary btn-large">Play Now</a>
+                <a th:href="@{/leaderboard}" class="btn btn-secondary">View Leaderboard</a>
+            </div>
+
+            <div class="game-controls">
+                <h3>Game Controls</h3>
+                <div class="controls-grid">
+                    <div class="control-item">
+                        <strong>WASD</strong> - Move Tank
+                    </div>
+                    <div class="control-item">
+                        <strong>SPACE</strong> - Shoot
+                    </div>
+                    <div class="control-item">
+                        <strong>ESC</strong> - Pause/Menu
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2024 Panzers Game. Built with Spring Boot & WebSocket</p>
+        </footer>
+    </div>
+</body>
+</html>
