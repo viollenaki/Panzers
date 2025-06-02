@@ -51,14 +51,10 @@ public class Bullet {
 
         // Move bullet in its direction
         switch (direction) {
-            case UP ->
-                y -= speed;
-            case DOWN ->
-                y += speed;
-            case LEFT ->
-                x -= speed;
-            case RIGHT ->
-                x += speed;
+            case UP -> y -= speed;
+            case DOWN -> y += speed;
+            case LEFT -> x -= speed;
+            case RIGHT -> x += speed;
         }
 
         // Check if bullet should be destroyed
@@ -83,8 +79,8 @@ public class Bullet {
 
     // Collision detection
     public boolean intersects(Tank tank) {
-        if (tank.getPlayerId().equals(ownerId)) {
-            return false; // Can't hit own tank
+        if (!isActive || !tank.isAlive() || tank.getPlayerId().equals(ownerId)) {
+            return false; // Can't hit own tank or inactive/dead tanks
         }
 
         return Math.abs(this.x - tank.getX()) < (BULLET_SIZE + Tank.TANK_SIZE) / 2.0

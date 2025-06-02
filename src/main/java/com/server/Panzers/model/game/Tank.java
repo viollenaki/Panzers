@@ -28,6 +28,10 @@ public class Tank {
     public static final long FIRE_RATE_MS = 500; // 2 shots per second
     public static final int DAMAGE_PER_HIT = 25;
 
+    public enum Direction {
+        UP, DOWN, LEFT, RIGHT
+    }
+
     public Tank() {
         this.id = "tank_" + ID_GENERATOR.incrementAndGet();
         this.health = MAX_HEALTH;
@@ -51,59 +55,62 @@ public class Tank {
     public void move(Direction newDirection) {
         this.direction = newDirection;
         this.isMoving = true;
-
-        double newX = x;
-        double newY = y;
-
+        
         switch (direction) {
-            case UP ->
-                newY -= speed;
-            case DOWN ->
-                newY += speed;
-            case LEFT ->
-                newX -= speed;
-            case RIGHT ->
-                newX += speed;
+            case UP:
+                y -= speed;
+                break;
+            case DOWN:
+                y += speed;
+                break;
+            case LEFT:
+                x -= speed;
+                break;
+            case RIGHT:
+                x += speed;
+                break;
         }
-
-        // Update position (collision detection will be handled by GameService)
-        this.x = newX;
-        this.y = newY;
     }
 
-    public void stop() {
+    public void stopMoving() {
         this.isMoving = false;
     }
 
-    public boolean canShoot() {
-        long currentTime = System.currentTimeMillis();
-        return isAlive && ammunition > 0 && (currentTime - lastShotTime) >= FIRE_RATE_MS;
-    }
-
+    // Combat methods
     public Bullet shoot() {
-        if (!canShoot()) {
+        if (ammunition <= 0 || !canShoot()) {
             return null;
         }
 
         ammunition--;
         lastShotTime = System.currentTimeMillis();
 
-        // Calculate bullet spawn position at front of tank
         double bulletX = x;
         double bulletY = y;
 
+        // Position bullet at tank's edge based on direction
         switch (direction) {
-            case UP ->
+            case UP:
                 bulletY -= TANK_SIZE / 2;
-            case DOWN ->
+                break;
+            case DOWN:
                 bulletY += TANK_SIZE / 2;
-            case LEFT ->
+                break;
+            case LEFT:
                 bulletX -= TANK_SIZE / 2;
-            case RIGHT ->
+                break;
+            case RIGHT:
                 bulletX += TANK_SIZE / 2;
+                break;
         }
 
         return new Bullet(bulletX, bulletY, direction, playerId);
+    }
+
+    @JsonIgnore
+    public boolean canShoot() {
+        return ammunition > 0 && 
+               (System.currentTimeMillis() - lastShotTime) >= FIRE_RATE_MS;
     }
 
     public void takeDamage(int damage) {
@@ -114,6 +121,10 @@ public class Tank {
         }
     }
 
+    public void reload() {
+        this.ammunition = MAX_AMMUNITION;
+    }
+
     public void respawn(double spawnX, double spawnY) {
         this.x = spawnX;
         this.y = spawnY;
@@ -122,10 +133,6 @@ public class Tank {
         this.isAlive = true;
         this.direction = Direction.UP;
         this.isMoving = false;
-    }
-
-    public void reload() {
-        this.ammunition = MAX_AMMUNITION;
     }
 
     // Collision detection
@@ -140,18 +147,12 @@ public class Tank {
     }
 
     // Utility methods
-    @JsonIgnore
     public boolean needsAmmoReload() {
         return ammunition == 0;
     }
 
-    @JsonIgnore
     public double getHealthPercentage() {
         return (double) health / MAX_HEALTH * 100;
-    }
-
-    public enum Direction {
-        UP, DOWN, LEFT, RIGHT
     }
 
     // Getters and Setters

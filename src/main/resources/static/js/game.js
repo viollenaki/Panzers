@@ -92,13 +92,14 @@ class TankGame {
         console.log('WebSocket connected successfully');
         this.updateConnectionStatus('connected', 'Connected');
         
-        // Подписываемся на игровые события
-        this.stompClient.subscribe('/topic/game-state', (message) => {
-            this.handleGameStateUpdate(JSON.parse(message.body));
-        });
+        // Получаем session ID (для упрощения используем временную метку)
+        if (!this.sessionId) {
+            this.sessionId = 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
         
-        this.stompClient.subscribe('/topic/player-updates', (message) => {
-            this.handlePlayerUpdate(JSON.parse(message.body));
+        // Подписываемся на игровые события
+        this.stompClient.subscribe('/topic/gamestate', (message) => {
+            this.handleGameStateUpdate(JSON.parse(message.body));
         });
         
         // Присоединяемся к игре
@@ -125,7 +126,7 @@ class TankGame {
 
         const action = {
             type: actionType,
-            sessionId: this.sessionId,
+            playerId: this.sessionId, // Сервер использует playerId
             timestamp: Date.now(),
             data: data
         };
@@ -418,6 +419,14 @@ class TankGame {
     handleGameStateUpdate(gameState) {
         console.log('Game state updated:', gameState);
         this.gameState = gameState;
+        
+        // Обновляем информацию о собственном танке
+        if (gameState.tanks && this.sessionId) {
+            this.playerTank = gameState.tanks.find(tank => tank.playerId === this.sessionId);
+        }
+        
+        // Обновляем UI
+        this.updateUI();
         this.renderGame();
     }
 
@@ -439,6 +448,33 @@ class TankGame {
 
     updateGame() {
         // Update game logic here
+    }
+
+    updateUI() {
+        // Обновляем информацию о здоровье, патронах и счете
+        if (this.playerTank) {
+            const healthText = document.getElementById('healthText');
+            const healthBar = document.getElementById('healthBar');
+            const ammoText = document.getElementById('ammoText');
+            const scoreText = document.getElementById('scoreText');
+            
+            if (healthText) healthText.textContent = this.playerTank.health || 100;
+            if (healthBar) healthBar.style.width = ((this.playerTank.health || 100) / 100 * 100) + '%';
+            if (ammoText) ammoText.textContent = this.playerTank.ammunition || 30;
+            
+            // Обновляем счет из gameState
+            if (this.gameState && this.gameState.scores && scoreText) {
+                scoreText.textContent = this.gameState.scores[this.sessionId] || 0;
+            }
+        }
+        
+        // Обновляем количество игроков
+        if (this.gameState && this.gameState.gameInfo) {
+            const playerCount = document.getElementById('playerCount');
+            if (playerCount) {
+                playerCount.textContent = this.gameState.gameInfo.activePlayers || 0;
+            }
+        }
     }
 
     renderGame() {
