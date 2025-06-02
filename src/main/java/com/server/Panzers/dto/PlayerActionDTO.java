@@ -58,6 +58,16 @@ public class PlayerActionDTO {
             this.direction = direction;
         }
 
+        public void setDirection(String directionStr) {
+            if (directionStr != null) {
+                try {
+                    this.direction = Tank.Direction.valueOf(directionStr.toUpperCase());
+                } catch (IllegalArgumentException e) {
+                    this.direction = null;
+                }
+            }
+        }
+
         public boolean isMoving() {
             return isMoving;
         }

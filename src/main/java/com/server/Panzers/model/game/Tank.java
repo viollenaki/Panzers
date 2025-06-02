@@ -72,6 +72,10 @@ public class Tank {
         }
     }
 
+    public void stop() {
+        this.isMoving = false;
+    }
+
     public void stopMoving() {
         this.isMoving = false;
     }

@@ -261,6 +261,7 @@ class TankGame {
         
         // Send stop action to server
         if (this.playerTank) {
+            this.playerTank.isMoving = false;
             this.sendPlayerAction('PLAYER_STOP', {
                 x: this.playerTank.x,
                 y: this.playerTank.y,
@@ -293,7 +294,7 @@ class TankGame {
         let newY = this.playerTank.y;
         const speed = this.playerTank.speed || 2;
         
-        // Primary movement keys (WASD)
+        // Determine movement direction based on pressed keys
         if (this.keyStates['KeyW'] || this.keyStates['ArrowUp']) {
             direction = 'UP';
             newY -= speed;
@@ -312,23 +313,23 @@ class TankGame {
             isMoving = true;
         }
         
-        // Boundary checking
+        // Client-side boundary checking
         const halfSize = this.TANK_SIZE / 2;
         newX = Math.max(halfSize, Math.min(this.CANVAS_WIDTH - halfSize, newX));
         newY = Math.max(halfSize, Math.min(this.CANVAS_HEIGHT - halfSize, newY));
         
         if (direction && isMoving) {
-            // Update local tank position for smooth movement
+            // Update local tank position for smooth movement (client-side prediction)
             this.playerTank.x = newX;
             this.playerTank.y = newY;
             this.playerTank.direction = direction;
             this.playerTank.isMoving = isMoving;
             
-            // Send movement to server
+            // Send movement to server with proper direction string
             this.sendPlayerAction('PLAYER_MOVE', {
                 x: newX,
                 y: newY,
-                direction: direction,
+                direction: direction, // Now sending as string
                 isMoving: isMoving
             });
         }
@@ -420,12 +421,32 @@ class TankGame {
         console.log('Game state updated:', gameState);
         this.gameState = gameState;
         
-        // Обновляем информацию о собственном танке
+        // Update our own tank from server state (server reconciliation)
         if (gameState.tanks && this.sessionId) {
-            this.playerTank = gameState.tanks.find(tank => tank.playerId === this.sessionId);
+            const serverTank = gameState.tanks.find(tank => tank.playerId === this.sessionId);
+            if (serverTank) {
+                // Only update position if there's significant difference (anti-jitter)
+                const threshold = 5; // pixels
+                if (this.playerTank) {
+                    const dx = Math.abs(this.playerTank.x - serverTank.x);
+                    const dy = Math.abs(this.playerTank.y - serverTank.y);
+                    
+                    if (dx > threshold || dy > threshold) {
+                        this.playerTank.x = serverTank.x;
+                        this.playerTank.y = serverTank.y;
+                    }
+                    
+                    // Always update other properties
+                    this.playerTank.health = serverTank.health;
+                    this.playerTank.ammunition = serverTank.ammunition;
+                    this.playerTank.isAlive = serverTank.isAlive;
+                } else {
+                    this.playerTank = serverTank;
+                }
+            }
         }
         
-        // Обновляем UI
+        // Update UI and render
         this.updateUI();
         this.renderGame();
     }
@@ -532,23 +553,64 @@ class TankGame {
     }
 
     drawTank(tank) {
-        this.ctx.fillStyle = tank.color || '#00ff88';
-        this.ctx.fillRect(
-            tank.x - this.TANK_SIZE / 2,
-            tank.y - this.TANK_SIZE / 2,
-            this.TANK_SIZE,
-            this.TANK_SIZE
-        );
+        const ctx = this.ctx;
+        const x = tank.x;
+        const y = tank.y;
+        const size = this.TANK_SIZE;
+        
+        // Tank body
+        ctx.fillStyle = tank.playerId === this.sessionId ? '#00ff88' : (tank.color || '#ff4444');
+        ctx.fillRect(x - size/2, y - size/2, size, size);
+        
+        // Tank direction indicator (barrel)
+        ctx.fillStyle = '#333333';
+        const barrelLength = size * 0.6;
+        const barrelWidth = 4;
+        
+        ctx.save();
+        ctx.translate(x, y);
+        
+        switch(tank.direction) {
+            case 'UP':
+                ctx.rotate(0);
+                break;
+            case 'DOWN':
+                ctx.rotate(Math.PI);
+                break;
+            case 'LEFT':
+                ctx.rotate(-Math.PI/2);
+                break;
+            case 'RIGHT':
+                ctx.rotate(Math.PI/2);
+                break;
+        }
+        
+        ctx.fillRect(-barrelWidth/2, -size/2 - barrelLength, barrelWidth, barrelLength);
+        ctx.restore();
+        
+        // Health bar for other players
+        if (tank.playerId !== this.sessionId && tank.health < 100) {
+            this.drawHealthBar(x, y - size/2 - 8, tank.health);
+        }
+        
+        // Player name
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(tank.playerId.substring(0, 8), x, y + size/2 + 15);
     }
 
-    drawBullet(bullet) {
-        this.ctx.fillStyle = '#ffff00';
-        this.ctx.fillRect(
-            bullet.x - this.BULLET_SIZE / 2,
-            bullet.y - this.BULLET_SIZE / 2,
-            this.BULLET_SIZE,
-            this.BULLET_SIZE
-        );
+    drawHealthBar(x, y, health) {
+        const width = this.TANK_SIZE;
+        const height = 4;
+        
+        // Background
+        this.ctx.fillStyle = '#333333';
+        this.ctx.fillRect(x - width/2, y, width, height);
+        
+        // Health
+        this.ctx.fillStyle = health > 50 ? '#00ff00' : health > 25 ? '#ffff00' : '#ff0000';
+        this.ctx.fillRect(x - width/2, y, (width * health / 100), height);
     }
 }
 

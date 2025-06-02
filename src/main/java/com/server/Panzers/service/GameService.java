@@ -118,25 +118,30 @@ public class GameService {
         Direction direction = data.getDirection();
         boolean isMoving = data.isMoving();
 
-        // Server-side validation
-        if (isValidPosition(newX, newY, Tank.TANK_SIZE)) {
-            // Check for collisions with other tanks
-            boolean collisionDetected = false;
-            for (Tank otherTank : activeTanks.values()) {
-                if (!otherTank.getId().equals(tank.getId())
-                        && otherTank.isAlive()
-                        && otherTank.intersects(newX, newY, Tank.TANK_SIZE)) {
-                    collisionDetected = true;
-                    break;
-                }
-            }
+        // Server-side boundary validation
+        double halfSize = Tank.TANK_SIZE / 2.0;
+        newX = Math.max(halfSize, Math.min(GAME_WIDTH - halfSize, newX));
+        newY = Math.max(halfSize, Math.min(GAME_HEIGHT - halfSize, newY));
 
-            if (!collisionDetected) {
-                tank.setX(newX);
-                tank.setY(newY);
-                tank.setDirection(direction);
-                tank.setMoving(isMoving);
+        // Check for collisions with other tanks
+        boolean collisionDetected = false;
+        for (Tank otherTank : activeTanks.values()) {
+            if (!otherTank.getId().equals(tank.getId())
+                    && otherTank.isAlive()
+                    && otherTank.intersects(newX, newY, Tank.TANK_SIZE)) {
+                collisionDetected = true;
+                break;
             }
+        }
+
+        if (!collisionDetected) {
+            tank.setX(newX);
+            tank.setY(newY);
+            tank.setDirection(direction);
+            tank.setMoving(isMoving);
+        } else {
+            // Stop tank if collision detected
+            tank.setMoving(false);
         }
     }
 
