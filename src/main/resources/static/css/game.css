@@ -205,6 +205,70 @@ kbd {
     }
 }
 
+/* Achievement Notifications */
+.achievement-notification {
+    position: relative;
+    background: linear-gradient(135deg, #4CAF50, #2E7D32);
+    border: 2px solid #FFD700;
+    border-radius: 10px;
+    padding: 15px;
+    margin: 10px 0;
+    color: #fff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    animation: achievementSlideIn 0.5s ease-out;
+    font-family: 'Arial', sans-serif;
+}
+
+.achievement-notification.personal {
+    background: linear-gradient(135deg, #FF6B35, #F7931E);
+    border-color: #FFD700;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+}
+
+.achievement-notification.global {
+    background: linear-gradient(135deg, #1976D2, #1565C0);
+    border-color: #90CAF9;
+}
+
+.achievement-header {
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.achievement-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 5px;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.achievement-description {
+    font-size: 13px;
+    margin-bottom: 8px;
+    opacity: 0.9;
+}
+
+.achievement-points {
+    font-size: 16px;
+    font-weight: bold;
+    color: #FFD700;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+@keyframes achievementSlideIn {
+    from {
+        transform: translateX(300px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
     .game-hud {
@@ -228,5 +292,18 @@ kbd {
     
     .controls-info {
         display: none;
+    }
+    
+    .achievement-notification {
+        margin: 5px 0;
+        padding: 12px;
+    }
+    
+    .achievement-title {
+        font-size: 16px;
+    }
+    
+    .achievement-points {
+        font-size: 14px;
     }
 }

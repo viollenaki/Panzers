@@ -74,4 +74,19 @@ public class StatisticsService {
     public GameStatistics saveStatistics(GameStatistics statistics) {
         return gameStatisticsRepository.save(statistics);
     }
+
+    public void updateRealTimeStats(Long userId, Integer currentScore, Integer kills, Integer deaths) {
+        try {
+            GameStatistics stats = getOrCreateUserStatistics(userId);
+            if (stats != null) {
+                // Update current session high score if needed
+                if (currentScore != null && currentScore > stats.getHighestScore()) {
+                    stats.setHighestScore(currentScore);
+                    saveStatistics(stats);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error updating real-time stats: " + e.getMessage());
+        }
+    }
 }

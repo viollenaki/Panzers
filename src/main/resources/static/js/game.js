@@ -105,9 +105,7 @@ class TankGame {
         
         // Активируем клиент
         this.stompClient.activate();
-    }
-
-    onWebSocketConnected() {
+    }    onWebSocketConnected() {
         console.log('WebSocket connected successfully');
         this.updateConnectionStatus('connected', 'Connected');
         
@@ -119,6 +117,16 @@ class TankGame {
         // Подписываемся на игровые события
         this.stompClient.subscribe('/topic/gamestate', (message) => {
             this.handleGameStateUpdate(JSON.parse(message.body));
+        });
+        
+        // Подписываемся на уведомления о достижениях
+        this.stompClient.subscribe('/topic/achievements', (message) => {
+            this.handleAchievementNotification(JSON.parse(message.body));
+        });
+        
+        // Подписываемся на персональные уведомления о достижениях
+        this.stompClient.subscribe('/user/queue/achievements', (message) => {
+            this.handlePersonalAchievement(JSON.parse(message.body));
         });
         
         // Присоединяемся к игре
@@ -496,13 +504,78 @@ class TankGame {
                 }
             }, duration);
         }
-    }
-
-    hideMessage() {
+    }    hideMessage() {
         const messagesContainer = document.getElementById('gameMessages');
         if (messagesContainer) {
             messagesContainer.innerHTML = '';
         }
+    }
+    
+    handleAchievementNotification(achievement) {
+        console.log('Achievement notification received:', achievement);
+        
+        // Show achievement as a special message
+        this.showAchievementMessage(
+            achievement.achievementName, 
+            achievement.description, 
+            achievement.bonusPoints
+        );
+    }
+    
+    handlePersonalAchievement(achievement) {
+        console.log('Personal achievement received:', achievement);
+        
+        // Show personal achievement with enhanced styling
+        this.showPersonalAchievementMessage(
+            achievement.achievementName, 
+            achievement.description, 
+            achievement.bonusPoints
+        );
+    }
+    
+    showAchievementMessage(title, description, points) {
+        const messagesContainer = document.getElementById('gameMessages');
+        if (!messagesContainer) return;
+        
+        const achievementElement = document.createElement('div');
+        achievementElement.className = 'achievement-notification global';
+        achievementElement.innerHTML = `
+            <div class="achievement-header">🏆 ${title}</div>
+            <div class="achievement-description">${description}</div>
+            <div class="achievement-points">+${points} points</div>
+        `;
+        
+        messagesContainer.appendChild(achievementElement);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (achievementElement.parentNode) {
+                achievementElement.parentNode.removeChild(achievementElement);
+            }
+        }, 5000);
+    }
+    
+    showPersonalAchievementMessage(title, description, points) {
+        const messagesContainer = document.getElementById('gameMessages');
+        if (!messagesContainer) return;
+        
+        const achievementElement = document.createElement('div');
+        achievementElement.className = 'achievement-notification personal';
+        achievementElement.innerHTML = `
+            <div class="achievement-header">🎯 YOUR ACHIEVEMENT</div>
+            <div class="achievement-title">${title}</div>
+            <div class="achievement-description">${description}</div>
+            <div class="achievement-points">+${points} points earned!</div>
+        `;
+        
+        messagesContainer.appendChild(achievementElement);
+        
+        // Auto-remove after 7 seconds
+        setTimeout(() => {
+            if (achievementElement.parentNode) {
+                achievementElement.parentNode.removeChild(achievementElement);
+            }
+        }, 7000);
     }
 
     handleGameStateUpdate(gameState) {

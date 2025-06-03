@@ -16,6 +16,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import com.server.Panzers.dto.AchievementDTO;
 import com.server.Panzers.dto.GameStateDTO;
 import com.server.Panzers.dto.PlayerActionDTO;
 import com.server.Panzers.model.GameSession;
@@ -68,7 +69,6 @@ public class GameService {
         String actionType = action.getType();
         String playerId = action.getPlayerId();
         PlayerActionDTO.ActionData data = action.getData();
-
         switch (actionType) {
             case "PLAYER_JOIN" ->
                 handlePlayerJoin(playerId, data);
@@ -83,7 +83,7 @@ public class GameService {
             case "PLAYER_LEAVE" ->
                 handlePlayerLeave(playerId);
             default ->
-                LOGGER.warning("Unknown action type: " + actionType);
+                LOGGER.warning(() -> "Unknown action type: " + actionType);
         }
     }
 
@@ -122,12 +122,12 @@ public class GameService {
             if (user != null) {
                 GameSession session = gameSessionService.createSession(user);
                 playerSessions.put(playerId, session);
-                LOGGER.info("Created game session for user: " + playerName);
+                LOGGER.info(() -> "Created game session for user: " + playerName);
             } else {
-                LOGGER.info("Anonymous player joined: " + playerName);
+                LOGGER.info(() -> "Anonymous player joined: " + playerName);
             }
         } catch (Exception e) {
-            LOGGER.warning("Error creating game session for player " + playerName + ": " + e.getMessage());
+            LOGGER.warning(() -> "Error creating game session for player " + playerName + ": " + e.getMessage());
         }
     }
 
@@ -208,7 +208,7 @@ public class GameService {
             try {
                 gameSessionService.recordShot(session);
             } catch (Exception e) {
-                LOGGER.warning("Error updating shot stats for player " + playerId + ": " + e.getMessage());
+                LOGGER.warning(() -> "Error updating shot stats for player " + playerId + ": " + e.getMessage());
             }
         }
     }
@@ -301,24 +301,49 @@ public class GameService {
                 targetStats.setDeaths(targetStats.getDeaths() + 1);
 
                 // Record death in session
-                updateSessionDeath(tank.getPlayerId());
-
-                // Handle killer stats
+                updateSessionDeath(tank.getPlayerId());                // Handle killer stats
                 GameStateDTO.PlayerStats shooterStats = playerStats.get(bullet.getOwnerId());
-                if (shooterStats != null) {
+                if (shooterStats != null && !bullet.getOwnerId().equals(tank.getPlayerId())) {
                     shooterStats.setKills(shooterStats.getKills() + 1);
-                    int scoreGain = 100;
-                    playerScores.put(bullet.getOwnerId(),
-                            playerScores.getOrDefault(bullet.getOwnerId(), 0) + scoreGain);
+                    int baseScore = 100; // Base kill score
 
-                    // Record kill and hit in session
-                    updateSessionKill(bullet.getOwnerId(), scoreGain);
+                    // Bonus points for multi-kill streaks
+                    int currentKills = shooterStats.getKills();
+                    int bonusScore = 0;
+                    if (currentKills >= 5) {
+                        bonusScore = 50; // Killing spree bonus
+                    }
+                    if (currentKills >= 10) {
+                        bonusScore += 100; // Rampage bonus (total 150)
+                    }
+
+                    final int totalScore = baseScore + bonusScore;
+
+                    // Update shooter's score
+                    int currentScore = playerScores.getOrDefault(bullet.getOwnerId(), 0);
+                    playerScores.put(bullet.getOwnerId(), currentScore + totalScore);                    // Record kill and hit in session
+                    updateSessionKill(bullet.getOwnerId(), totalScore);
+
+                    // Check for achievements
+                    checkAchievements(bullet.getOwnerId());
+
+                    LOGGER.info(() -> String.format("Player %s killed %s for %d points",
+                            bullet.getOwnerId(), tank.getPlayerId(), totalScore));
                 }
 
                 respawnTank(tank);
             } else {
-                // Just a hit, not a kill
-                updateSessionHit(bullet.getOwnerId());
+                // Just a hit, not a kill - give smaller score reward
+                if (!bullet.getOwnerId().equals(tank.getPlayerId())) {
+                    int hitScore = 10; // Hit score
+                    int currentScore = playerScores.getOrDefault(bullet.getOwnerId(), 0);
+                    playerScores.put(bullet.getOwnerId(), currentScore + hitScore);
+
+                    updateSessionHit(bullet.getOwnerId());
+
+                    LOGGER.fine(() -> String.format("Player %s hit %s for %d points",
+                            bullet.getOwnerId(), tank.getPlayerId(), hitScore));
+                }
             }
         }
     }
@@ -329,7 +354,7 @@ public class GameService {
             try {
                 gameSessionService.recordDeath(session);
             } catch (Exception e) {
-                LOGGER.warning("Error updating death stats for player " + playerId + ": " + e.getMessage());
+                LOGGER.warning(() -> "Error updating death stats for player " + playerId + ": " + e.getMessage());
             }
         }
     }
@@ -341,7 +366,7 @@ public class GameService {
                 gameSessionService.recordKill(session, scoreGain);
                 gameSessionService.recordHit(session); // Kill counts as hit too
             } catch (Exception e) {
-                LOGGER.warning("Error updating kill stats for player " + playerId + ": " + e.getMessage());
+                LOGGER.warning(() -> "Error updating kill stats for player " + playerId + ": " + e.getMessage());
             }
         }
     }
@@ -352,7 +377,7 @@ public class GameService {
             try {
                 gameSessionService.recordHit(session);
             } catch (Exception e) {
-                LOGGER.warning("Error updating hit stats for player " + playerId + ": " + e.getMessage());
+                LOGGER.warning(() -> "Error updating hit stats for player " + playerId + ": " + e.getMessage());
             }
         }
     }
@@ -365,13 +390,13 @@ public class GameService {
             public void run() {
                 // Find a new spawn point
                 double[] spawnPoint = findAvailableSpawnPoint();
-                
+
                 // Reset tank position and status
                 tank.setX(spawnPoint[0]);
                 tank.setY(spawnPoint[1]);
                 tank.setHealth(Tank.MAX_HEALTH);
                 tank.setAmmunition(Tank.MAX_AMMUNITION);
-                
+
                 // Update player stats
                 GameStateDTO.PlayerStats stats = playerStats.get(tank.getPlayerId());
                 if (stats != null) {
@@ -379,7 +404,7 @@ public class GameService {
                     stats.setHealth(tank.getHealth());
                     stats.setAmmunition(tank.getAmmunition());
                 }
-                
+
                 broadcastGameState();
             }
         }, 3000);  // 3 seconds respawn delay
@@ -404,14 +429,13 @@ public class GameService {
             try {
                 Integer finalScore = playerScores.get(playerId);
                 gameSessionService.endSession(session, finalScore != null ? finalScore : 0);
-                LOGGER.info("Ended game session for player: " + playerId);
+                LOGGER.info(() -> "Ended game session for player: " + playerId);
             } catch (Exception e) {
-                LOGGER.warning("Error ending game session for player " + playerId + ": " + e.getMessage());
+                LOGGER.warning(() -> "Error ending game session for player " + playerId + ": " + e.getMessage());
             }
         }
-    }
+    }// Scheduled method to save periodic updates
 
-    // Scheduled method to save periodic updates
     @Scheduled(fixedRate = 30000) // Every 30 seconds
     public void savePeriodicUpdates() {
         for (Map.Entry<String, GameSession> entry : playerSessions.entrySet()) {
@@ -424,7 +448,7 @@ public class GameService {
                     gameSessionService.updateSessionScore(session, currentScore);
                 }
             } catch (Exception e) {
-                LOGGER.warning("Error updating periodic session data for player " + playerId + ": " + e.getMessage());
+                LOGGER.warning(() -> "Error updating periodic session data for player " + playerId + ": " + e.getMessage());
             }
         }
     }
@@ -449,12 +473,6 @@ public class GameService {
             }
         }
         return spawnPoints[RANDOM.nextInt(spawnPoints.length)];
-    }
-
-    private boolean isValidPosition(double x, double y, int size) {
-        double halfSize = size / 2.0;
-        return !(x - halfSize < 0 || x + halfSize > GAME_WIDTH
-                || y - halfSize < 0 || y + halfSize > GAME_HEIGHT);
     }
 
     private boolean isOutOfBounds(double x, double y) {
@@ -496,5 +514,166 @@ public class GameService {
 
     public Map<String, GameStateDTO.PlayerStats> getPlayerStats() {
         return new HashMap<>(playerStats);
+    }
+
+    // Achievement system
+    private void checkAchievements(String playerId) {
+        GameStateDTO.PlayerStats stats = playerStats.get(playerId);
+        if (stats == null) {
+            return;
+        }
+
+        int kills = stats.getKills();
+        GameSession session = playerSessions.get(playerId);
+
+        if (session != null) {
+            try {
+                // First blood achievement
+                if (kills == 1) {
+                    addBonusScore(playerId, 50, "First Blood!");
+                }
+                // Killing spree achievements
+                switch (kills) {
+                    case 5 ->
+                        addBonusScore(playerId, 100, "Killing Spree!");
+                    case 10 ->
+                        addBonusScore(playerId, 200, "Rampage!");
+                    case 15 ->
+                        addBonusScore(playerId, 300, "Unstoppable!");
+                    case 20 ->
+                        addBonusScore(playerId, 500, "Godlike!");
+                    default -> {
+                        /* No achievement for this kill count */ }
+                }
+
+                // Accuracy achievements
+                if (session.getShotsFired() >= 10) {
+                    double accuracy = session.getAccuracy();
+                    if (accuracy >= 90.0) {
+                        addBonusScore(playerId, 200, "Sharpshooter!");
+                    } else if (accuracy >= 75.0) {
+                        addBonusScore(playerId, 100, "Marksman!");
+                    }
+                }
+
+            } catch (Exception e) {
+                LOGGER.warning(() -> "Error checking achievements for player " + playerId + ": " + e.getMessage());
+            }
+        }
+    }
+
+    private void addBonusScore(String playerId, int bonus, String achievement) {
+        int currentScore = playerScores.getOrDefault(playerId, 0);
+        playerScores.put(playerId, currentScore + bonus);
+
+        GameSession session = playerSessions.get(playerId);
+        if (session != null) {
+            session.addScore(bonus);
+            gameSessionService.updateSessionScore(session, currentScore + bonus);
+        }
+
+        // Send achievement notification via WebSocket
+        sendAchievementNotification(playerId, achievement, bonus);
+
+        LOGGER.info(() -> String.format("Player %s earned achievement '%s' for %d bonus points",
+                playerId, achievement, bonus));
+    }
+
+    private void sendAchievementNotification(String playerId, String achievement, int bonusPoints) {
+        try {
+            AchievementDTO achievementDto = new AchievementDTO(
+                    playerId,
+                    achievement,
+                    "Achievement unlocked: " + achievement + " (+" + bonusPoints + " points)",
+                    bonusPoints
+            );
+
+            // Send to specific player
+            messagingTemplate.convertAndSendToUser(playerId, "/queue/achievements", achievementDto);
+
+            // Also broadcast to all players for global notifications
+            messagingTemplate.convertAndSend("/topic/achievements", achievementDto);
+
+        } catch (Exception e) {
+            LOGGER.warning(() -> "Error sending achievement notification for player " + playerId + ": " + e.getMessage());
+        }
+    }
+
+    // Enhanced game state tracking
+    public void updateGameStatistics() {
+        try {
+            for (Map.Entry<String, GameSession> entry : playerSessions.entrySet()) {
+                String playerId = entry.getKey();
+                GameSession session = entry.getValue();
+
+                if (session != null && session.getUser() != null) {
+                    // Update real-time statistics in database
+                    statisticsService.updateRealTimeStats(
+                            session.getUser().getId(),
+                            playerScores.getOrDefault(playerId, 0),
+                            session.getKillsInSession(),
+                            session.getDeathsInSession()
+                    );
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.warning(() -> "Error updating game statistics: " + e.getMessage());
+        }
+    }
+
+    // Survival bonus - players get points for staying alive
+    @Scheduled(fixedRate = 60000) // Every minute
+    public void giveSurvivalBonus() {
+        for (Map.Entry<String, Tank> entry : activeTanks.entrySet()) {
+            String playerId = entry.getKey();
+            Tank tank = entry.getValue();
+
+            if (tank.isAlive()) {
+                int survivalBonus = 5; // 5 points per minute survived
+                int currentScore = playerScores.getOrDefault(playerId, 0);
+                playerScores.put(playerId, currentScore + survivalBonus);
+
+                GameSession session = playerSessions.get(playerId);
+                if (session != null) {
+                    session.addScore(survivalBonus);
+                }
+            }
+        }
+    }
+
+    // Method to determine game winner based on various criteria
+    public String determineGameWinner() {
+        if (playerScores.isEmpty()) {
+            return null;
+        }
+
+        return playerScores.entrySet().stream()
+                .max(Map.Entry.comparingByValue())
+                .map(entry -> playerNames.get(entry.getKey()))
+                .orElse(null);
+    }
+
+    // Get top players for real-time leaderboard
+    public List<Map<String, Object>> getTopPlayers(int limit) {
+        return playerScores.entrySet().stream()
+                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+                .limit(limit)
+                .map(entry -> {
+                    String playerId = entry.getKey();
+                    Map<String, Object> playerInfo = new HashMap<>();
+                    playerInfo.put("playerId", playerId);
+                    playerInfo.put("playerName", playerNames.get(playerId));
+                    playerInfo.put("score", entry.getValue());
+
+                    GameStateDTO.PlayerStats stats = playerStats.get(playerId);
+                    if (stats != null) {
+                        playerInfo.put("kills", stats.getKills());
+                        playerInfo.put("deaths", stats.getDeaths());
+                        playerInfo.put("alive", stats.isAlive());
+                    }
+
+                    return playerInfo;
+                })
+                .toList();
     }
 }

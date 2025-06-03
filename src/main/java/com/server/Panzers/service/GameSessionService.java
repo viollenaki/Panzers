@@ -70,13 +70,56 @@ public class GameSessionService {
     }
 
     private GameSession.GameResult determineGameResult(GameSession session) {
-        // Simple logic to determine win/loss/draw
+        // Enhanced logic to determine win/loss/draw
         int kills = session.getKillsInSession();
         int deaths = session.getDeathsInSession();
+        int finalScore = session.getFinalScore();
+        double accuracy = session.getAccuracy();
+        int durationMinutes = session.getDurationSeconds() / 60;
 
-        if (kills > deaths + 2) {
+        // Advanced scoring system
+        int gameScore = 0;
+
+        // Score based on K/D ratio
+        if (deaths == 0 && kills > 0) {
+            gameScore += 50; // Perfect K/D
+        } else if (kills > deaths * 2) {
+            gameScore += 30; // Excellent K/D
+        } else if (kills > deaths) {
+            gameScore += 10; // Positive K/D
+        } else if (kills < deaths) {
+            gameScore -= 20; // Negative K/D
+        }
+
+        // Score based on accuracy
+        if (accuracy >= 75.0) {
+            gameScore += 20;
+        } else if (accuracy >= 50.0) {
+            gameScore += 10;
+        } else if (accuracy < 25.0) {
+            gameScore -= 10;
+        }
+
+        // Score based on final score
+        if (finalScore >= 1000) {
+            gameScore += 30;
+        } else if (finalScore >= 500) {
+            gameScore += 15;
+        } else if (finalScore < 0) {
+            gameScore -= 15;
+        }
+
+        // Score based on survival time
+        if (durationMinutes >= 10) {
+            gameScore += 10;
+        } else if (durationMinutes >= 5) {
+            gameScore += 5;
+        }
+
+        // Determine result based on total game score
+        if (gameScore >= 40) {
             return GameSession.GameResult.WIN;
-        } else if (deaths > kills + 2) {
+        } else if (gameScore <= -20) {
             return GameSession.GameResult.LOSS;
         } else {
             return GameSession.GameResult.DRAW;
