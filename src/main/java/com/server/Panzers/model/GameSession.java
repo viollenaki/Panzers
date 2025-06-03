@@ -42,6 +42,12 @@ public class GameSession {
     @Column(name = "deaths_in_session")
     private Integer deathsInSession = 0;
 
+    @Column(name = "shots_fired")
+    private Integer shotsFired = 0;
+
+    @Column(name = "shots_hit")
+    private Integer shotsHit = 0;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "game_result")
     private GameResult gameResult = GameResult.DISCONNECT;
@@ -82,6 +88,14 @@ public class GameSession {
 
     public void addScore(int points) {
         finalScore += points;
+    }
+
+    public void addShot() {
+        shotsFired++;
+    }
+
+    public void addHit() {
+        shotsHit++;
     }
 
     // Getters and Setters
@@ -141,6 +155,22 @@ public class GameSession {
         this.deathsInSession = deathsInSession;
     }
 
+    public Integer getShotsFired() {
+        return shotsFired;
+    }
+
+    public void setShotsFired(Integer shotsFired) {
+        this.shotsFired = shotsFired;
+    }
+
+    public Integer getShotsHit() {
+        return shotsHit;
+    }
+
+    public void setShotsHit(Integer shotsHit) {
+        this.shotsHit = shotsHit;
+    }
+
     public GameResult getGameResult() {
         return gameResult;
     }
@@ -155,6 +185,14 @@ public class GameSession {
 
     public void setDurationSeconds(Integer durationSeconds) {
         this.durationSeconds = durationSeconds;
+    }
+
+    public double getAccuracy() {
+        return shotsFired > 0 ? (double) shotsHit / shotsFired * 100 : 0;
+    }
+
+    public double getKDRatio() {
+        return deathsInSession > 0 ? (double) killsInSession / deathsInSession : killsInSession;
     }
 
     public enum GameResult {

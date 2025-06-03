@@ -18,6 +18,8 @@ import org.springframework.stereotype.Service;
 
 import com.server.Panzers.dto.GameStateDTO;
 import com.server.Panzers.dto.PlayerActionDTO;
+import com.server.Panzers.model.GameSession;
+import com.server.Panzers.model.User;
 import com.server.Panzers.model.game.Bullet;
 import com.server.Panzers.model.game.Tank;
 import com.server.Panzers.model.game.Tank.Direction;
@@ -29,9 +31,16 @@ public class GameService {
     private static final Random RANDOM = new Random();
 
     private final SimpMessagingTemplate messagingTemplate;
+    private final UserService userService;
+    private final StatisticsService statisticsService;
+    private final GameSessionService gameSessionService;
 
-    public GameService(SimpMessagingTemplate messagingTemplate) {
+    public GameService(SimpMessagingTemplate messagingTemplate, UserService userService,
+            StatisticsService statisticsService, GameSessionService gameSessionService) {
         this.messagingTemplate = messagingTemplate;
+        this.userService = userService;
+        this.statisticsService = statisticsService;
+        this.gameSessionService = gameSessionService;
     }
 
     // Game state storage
@@ -40,6 +49,7 @@ public class GameService {
     private final Map<String, Integer> playerScores = new ConcurrentHashMap<>();
     private final Map<String, GameStateDTO.PlayerStats> playerStats = new ConcurrentHashMap<>();
     private final Map<String, String> playerNames = new ConcurrentHashMap<>();
+    private final Map<String, GameSession> playerSessions = new ConcurrentHashMap<>(); // Track active sessions
 
     // Game constants
     public static final int GAME_WIDTH = 800;
@@ -99,7 +109,26 @@ public class GameService {
                 playerNames.get(playerId), 0, 0, Tank.MAX_HEALTH, Tank.MAX_AMMUNITION, true
         ));
 
+        // Create game session for registered users
+        createGameSession(playerId, playerName);
+
         broadcastGameState();
+    }
+
+    private void createGameSession(String playerId, String playerName) {
+        try {
+            // Try to find user by username (if logged in)
+            User user = userService.findByUsername(playerName);
+            if (user != null) {
+                GameSession session = gameSessionService.createSession(user);
+                playerSessions.put(playerId, session);
+                LOGGER.info("Created game session for user: " + playerName);
+            } else {
+                LOGGER.info("Anonymous player joined: " + playerName);
+            }
+        } catch (Exception e) {
+            LOGGER.warning("Error creating game session for player " + playerName + ": " + e.getMessage());
+        }
     }
 
     private void handlePlayerMove(String playerId, PlayerActionDTO.ActionData data) {
@@ -166,6 +195,20 @@ public class GameService {
             GameStateDTO.PlayerStats stats = playerStats.get(playerId);
             if (stats != null) {
                 stats.setAmmunition(tank.getAmmunition());
+            }
+
+            // Update session statistics
+            updateSessionShot(playerId);
+        }
+    }
+
+    private void updateSessionShot(String playerId) {
+        GameSession session = playerSessions.get(playerId);
+        if (session != null) {
+            try {
+                gameSessionService.recordShot(session);
+            } catch (Exception e) {
+                LOGGER.warning("Error updating shot stats for player " + playerId + ": " + e.getMessage());
             }
         }
     }
@@ -253,44 +296,142 @@ public class GameService {
             targetStats.setHealth(tank.getHealth());
 
             if (!tank.isAlive()) {
+                // Handle tank death
                 targetStats.setAlive(false);
                 targetStats.setDeaths(targetStats.getDeaths() + 1);
 
+                // Record death in session
+                updateSessionDeath(tank.getPlayerId());
+
+                // Handle killer stats
                 GameStateDTO.PlayerStats shooterStats = playerStats.get(bullet.getOwnerId());
                 if (shooterStats != null) {
                     shooterStats.setKills(shooterStats.getKills() + 1);
+                    int scoreGain = 100;
                     playerScores.put(bullet.getOwnerId(),
-                            playerScores.getOrDefault(bullet.getOwnerId(), 0) + 100);
+                            playerScores.getOrDefault(bullet.getOwnerId(), 0) + scoreGain);
+
+                    // Record kill and hit in session
+                    updateSessionKill(bullet.getOwnerId(), scoreGain);
                 }
 
                 respawnTank(tank);
+            } else {
+                // Just a hit, not a kill
+                updateSessionHit(bullet.getOwnerId());
+            }
+        }
+    }
+
+    private void updateSessionDeath(String playerId) {
+        GameSession session = playerSessions.get(playerId);
+        if (session != null) {
+            try {
+                gameSessionService.recordDeath(session);
+            } catch (Exception e) {
+                LOGGER.warning("Error updating death stats for player " + playerId + ": " + e.getMessage());
+            }
+        }
+    }
+
+    private void updateSessionKill(String playerId, int scoreGain) {
+        GameSession session = playerSessions.get(playerId);
+        if (session != null) {
+            try {
+                gameSessionService.recordKill(session, scoreGain);
+                gameSessionService.recordHit(session); // Kill counts as hit too
+            } catch (Exception e) {
+                LOGGER.warning("Error updating kill stats for player " + playerId + ": " + e.getMessage());
+            }
+        }
+    }
+
+    private void updateSessionHit(String playerId) {
+        GameSession session = playerSessions.get(playerId);
+        if (session != null) {
+            try {
+                gameSessionService.recordHit(session);
+            } catch (Exception e) {
+                LOGGER.warning("Error updating hit stats for player " + playerId + ": " + e.getMessage());
             }
         }
     }
 
     private void respawnTank(Tank tank) {
-        new Timer().schedule(new TimerTask() {
+        // Wait a bit before respawning
+        Timer timer = new Timer();
+        timer.schedule(new TimerTask() {
             @Override
             public void run() {
+                // Find a new spawn point
                 double[] spawnPoint = findAvailableSpawnPoint();
-                tank.respawn(spawnPoint[0], spawnPoint[1]);
-
+                
+                // Reset tank position and status
+                tank.setX(spawnPoint[0]);
+                tank.setY(spawnPoint[1]);
+                tank.setHealth(Tank.MAX_HEALTH);
+                tank.setAmmunition(Tank.MAX_AMMUNITION);
+                
+                // Update player stats
                 GameStateDTO.PlayerStats stats = playerStats.get(tank.getPlayerId());
                 if (stats != null) {
                     stats.setAlive(true);
-                    stats.setHealth(Tank.MAX_HEALTH);
-                    stats.setAmmunition(Tank.MAX_AMMUNITION);
+                    stats.setHealth(tank.getHealth());
+                    stats.setAmmunition(tank.getAmmunition());
                 }
+                
+                broadcastGameState();
             }
-        }, 3000);
+        }, 3000);  // 3 seconds respawn delay
     }
 
     private void handlePlayerLeave(String playerId) {
+        // End game session before removing player
+        endGameSession(playerId);
+
         activeTanks.remove(playerId);
         playerStats.remove(playerId);
         playerScores.remove(playerId);
         playerNames.remove(playerId);
+        playerSessions.remove(playerId);
+
         broadcastGameState();
+    }
+
+    private void endGameSession(String playerId) {
+        GameSession session = playerSessions.get(playerId);
+        if (session != null) {
+            try {
+                Integer finalScore = playerScores.get(playerId);
+                gameSessionService.endSession(session, finalScore != null ? finalScore : 0);
+                LOGGER.info("Ended game session for player: " + playerId);
+            } catch (Exception e) {
+                LOGGER.warning("Error ending game session for player " + playerId + ": " + e.getMessage());
+            }
+        }
+    }
+
+    // Scheduled method to save periodic updates
+    @Scheduled(fixedRate = 30000) // Every 30 seconds
+    public void savePeriodicUpdates() {
+        for (Map.Entry<String, GameSession> entry : playerSessions.entrySet()) {
+            String playerId = entry.getKey();
+            GameSession session = entry.getValue();
+
+            try {
+                Integer currentScore = playerScores.get(playerId);
+                if (currentScore != null) {
+                    gameSessionService.updateSessionScore(session, currentScore);
+                }
+            } catch (Exception e) {
+                LOGGER.warning("Error updating periodic session data for player " + playerId + ": " + e.getMessage());
+            }
+        }
+    }
+
+    // Method to get current online players count for statistics
+    public int getOnlinePlayersCount() {
+        return activeTanks.size();
     }
 
     private double[] findAvailableSpawnPoint() {

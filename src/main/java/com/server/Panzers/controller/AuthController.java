@@ -8,7 +8,9 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.server.Panzers.model.GameStatistics;
 import com.server.Panzers.model.User;
+import com.server.Panzers.service.StatisticsService;
 import com.server.Panzers.service.UserService;
 
 import jakarta.validation.Valid;
@@ -20,9 +22,11 @@ public class AuthController {
     private static final String AUTH_REGISTER_VIEW = "auth/register";
 
     private final UserService userService;
+    private final StatisticsService statisticsService;
 
-    public AuthController(UserService userService) {
+    public AuthController(UserService userService, StatisticsService statisticsService) {
         this.userService = userService;
+        this.statisticsService = statisticsService;
     }
 
     @GetMapping("/login")
@@ -59,7 +63,11 @@ public class AuthController {
             }
 
             // Сохраняем пользователя
-            userService.save(user);
+            User savedUser = userService.save(user);
+
+            // Создаем начальную статистику для пользователя
+            GameStatistics initialStats = new GameStatistics(savedUser);
+            statisticsService.saveStatistics(initialStats);
 
             redirectAttributes.addFlashAttribute("success", "Регистрация прошла успешно! Теперь вы можете войти в систему.");
             return "redirect:/login";

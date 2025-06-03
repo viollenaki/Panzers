@@ -9,16 +9,19 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.server.Panzers.model.GameStatistics;
-import com.server.Panzers.service.StatisticsService;
+import com.server.Panzers.service.GameService;
+import com.server.Panzers.service.StatisticsService; // Импортируем GameService
 
 @RestController
 @RequestMapping("/api")
 public class LeaderboardController {
 
     private final StatisticsService statisticsService;
+    private final GameService gameService; // Добавляем GameService в контроллер
 
-    public LeaderboardController(StatisticsService statisticsService) {
+    public LeaderboardController(StatisticsService statisticsService, GameService gameService) {
         this.statisticsService = statisticsService;
+        this.gameService = gameService;
     }
 
     @GetMapping("/leaderboard/{type}")
@@ -52,7 +55,10 @@ public class LeaderboardController {
     @GetMapping("/stats/global")
     public ResponseEntity<GlobalStatsDTO> getGlobalStats() {
         try {
+            // Получаем количество онлайн игроков из GameService
+            long onlinePlayers = gameService.getOnlinePlayersCount();
             GlobalStatsDTO stats = statisticsService.getGlobalStats();
+            stats.setOnlinePlayers(onlinePlayers);
             return ResponseEntity.ok(stats);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();

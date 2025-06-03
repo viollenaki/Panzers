@@ -2,10 +2,12 @@ package com.server.Panzers.service;
 
 import java.util.List;
 
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import com.server.Panzers.controller.LeaderboardController.GlobalStatsDTO;
 import com.server.Panzers.model.GameStatistics;
+import com.server.Panzers.model.User;
 import com.server.Panzers.repository.GameStatisticsRepository;
 import com.server.Panzers.repository.UserRepository;
 
@@ -14,10 +16,12 @@ public class StatisticsService {
 
     private final GameStatisticsRepository gameStatisticsRepository;
     private final UserRepository userRepository;
+    private final GameService gameService;
 
-    public StatisticsService(GameStatisticsRepository gameStatisticsRepository, UserRepository userRepository) {
+    public StatisticsService(GameStatisticsRepository gameStatisticsRepository, UserRepository userRepository, @Lazy GameService gameService) { // Добавьте @Lazy здесь
         this.gameStatisticsRepository = gameStatisticsRepository;
         this.userRepository = userRepository;
+        this.gameService = gameService;
     }
 
     public List<GameStatistics> getTopPlayersByScore() {
@@ -43,16 +47,13 @@ public class StatisticsService {
 
     public GlobalStatsDTO getGlobalStats() {
         long totalPlayers = userRepository.count();
-        long activeUsers = gameStatisticsRepository.countActivePlayersWithMinGames(1);
+        long totalGames = gameStatisticsRepository.count();
         Double avgScore = gameStatisticsRepository.getAverageScore();
-
-        // Для простоты считаем online игроков как активных пользователей
-        // В реальном приложении это было бы основано на сессиях WebSocket
-        long onlinePlayers = Math.min(activeUsers / 10, activeUsers); // Примерно 10% от активных
+        long onlinePlayers = gameService.getOnlinePlayersCount();
 
         return new GlobalStatsDTO(
                 totalPlayers,
-                activeUsers, // используем как totalGames для простоты
+                totalGames,
                 avgScore != null ? avgScore : 0.0,
                 onlinePlayers
         );
@@ -60,7 +61,14 @@ public class StatisticsService {
 
     public GameStatistics getOrCreateUserStatistics(Long userId) {
         return gameStatisticsRepository.findByUserId(userId)
-                .orElse(null);
+                .orElseGet(() -> {
+                    User user = userRepository.findById(userId).orElse(null);
+                    if (user != null) {
+                        GameStatistics newStats = new GameStatistics(user);
+                        return gameStatisticsRepository.save(newStats);
+                    }
+                    return null;
+                });
     }
 
     public GameStatistics saveStatistics(GameStatistics statistics) {
