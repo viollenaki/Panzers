@@ -117,6 +117,7 @@ public class GameService {
         double newY = data.getY();
         Direction direction = data.getDirection();
         boolean isMoving = data.isMoving();
+        double angle = data.getAngle(); // Get angle from client
 
         // Server-side boundary validation
         double halfSize = Tank.TANK_SIZE / 2.0;
@@ -139,6 +140,12 @@ public class GameService {
             tank.setY(newY);
             tank.setDirection(direction);
             tank.setMoving(isMoving);
+
+            // Update angle if provided
+            if (angle != 0) {
+                tank.setAngle(angle);
+                tank.updateDirectionFromAngle();
+            }
         } else {
             // Stop tank if collision detected
             tank.setMoving(false);

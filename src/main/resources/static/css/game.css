@@ -1,374 +1,232 @@
 /* Game-specific styles */
+
 .game-container {
-    width: 100vw;
-    height: 100vh;
     display: flex;
     flex-direction: column;
-    background: linear-gradient(135deg, #1a1a2e, #16213e);
-    overflow: hidden;
+    height: 100vh;
+    background: #1a1a1a;
+    color: #fff;
+    font-family: 'Courier New', monospace;
 }
 
-/* Game HUD */
 .game-hud {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 2rem;
+    padding: 10px 20px;
     background: rgba(0, 0, 0, 0.8);
-    border-bottom: 2px solid #00ff88;
-    height: 80px;
-    z-index: 100;
+    border-bottom: 2px solid #333;
+    min-height: 60px;
 }
 
-.hud-left,
-.hud-right {
+.hud-left, .hud-center, .hud-right {
     flex: 1;
 }
 
 .hud-center {
-    flex: 1;
     text-align: center;
 }
 
-/* Player Stats */
+.hud-right {
+    text-align: right;
+}
+
 .player-stats {
     display: flex;
-    gap: 2rem;
+    gap: 20px;
     align-items: center;
 }
 
 .stat-item {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 8px;
 }
 
 .stat-label {
-    color: #00ff88;
     font-weight: bold;
-    font-size: 0.9rem;
+    color: #ccc;
 }
 
-/* Health Bar */
 .health-bar {
     width: 100px;
-    height: 10px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 5px;
+    height: 8px;
+    background: #333;
+    border-radius: 4px;
     overflow: hidden;
-    border: 1px solid #00ff88;
 }
 
 .health-fill {
     height: 100%;
-    background: linear-gradient(90deg, #ff4444, #ffaa00, #00ff88);
-    width: 100%;
+    background: linear-gradient(90deg, #ff0000, #ffff00, #00ff00);
     transition: width 0.3s ease;
+    width: 100%;
 }
 
-#healthText,
-#ammoText,
-#scoreText {
-    color: #ffffff;
-    font-weight: bold;
-    font-size: 1rem;
-    min-width: 30px;
-}
-
-/* Connection Status */
-.connection-status {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    justify-content: center;
-}
-
-.status-indicator {
-    display: inline-block;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    margin-right: 8px;
-    background: #ff4444;
-    animation: pulse 2s infinite;
-}
-
-.status-indicator.connected {
-    background-color: #00ff88;
-    box-shadow: 0 0 6px #00ff88;
-}
-
-.status-indicator.connecting {
-    background-color: #ffaa00;
-    animation: pulse 1s infinite;
-}
-
-.status-indicator.error {
-    background-color: #ff4444;
-}
-
-#statusText {
-    color: #ffffff;
-    font-size: 0.9rem;
-}
-
-/* Game Info */
 .game-info {
     display: flex;
-    gap: 2rem;
-    justify-content: flex-end;
+    flex-direction: column;
+    gap: 5px;
 }
 
-.info-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.info-label {
-    color: #00ff88;
-    font-weight: bold;
-    font-size: 0.9rem;
-}
-
-#playerCount,
-#gameTime {
-    color: #ffffff;
-    font-weight: bold;
-    font-size: 1rem;
-}
-
-/* Game Area */
-.game-area {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: relative;
-    background: radial-gradient(circle at center, #2a2a4e, #1a1a2e);
-}
-
-#gameCanvas {
-    border: 3px solid #00ff88;
-    border-radius: 10px;
-    box-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
-    background: #000000;
-}
-
-/* Leaderboard Panel */
-.leaderboard-panel {
-    position: absolute;
-    top: 100px;
-    right: 20px;
-    width: 250px;
-    background: rgba(0, 0, 0, 0.9);
-    border: 2px solid #00ff88;
-    border-radius: 10px;
-    padding: 1rem;
-    z-index: 50;
-}
-
-.leaderboard-panel h3 {
-    color: #00ff88;
-    margin-bottom: 1rem;
-    text-align: center;
-    font-size: 1.1rem;
-}
-
-.leaderboard-list {
-    max-height: 300px;
-    overflow-y: auto;
-}
-
-.leaderboard-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 0.5rem;
-    margin-bottom: 0.5rem;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 5px;
-    font-size: 0.9rem;
-}
-
-.player-name {
-    color: #ffffff;
-    font-weight: bold;
-}
-
-.player-score {
-    color: #00ff88;
-}
-
-/* Controls Info */
-.controls-info {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: rgba(0, 0, 0, 0.8);
-    color: #ffffff;
-    padding: 15px;
-    border-radius: 8px;
-    font-size: 12px;
-    max-width: 200px;
-}
-
-.controls-panel {
-    background: rgba(0, 0, 0, 0.9);
-    border: 2px solid #00ff88;
-    border-radius: 10px;
-    padding: 1rem;
-    min-width: 200px;
-}
-
-.controls-panel h4 {
-    margin: 0 0 10px 0;
-    color: #00ff88;
-    text-align: center;
-}
-
-.control-row {
-    margin: 5px 0;
+.connection-status {
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
-.control-row kbd {
-    background: #333333;
-    border: 1px solid #555555;
-    border-radius: 3px;
-    padding: 2px 6px;
-    font-size: 10px;
-    min-width: 20px;
-    text-align: center;
-    color: #ffffff;
+.status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #ff0000;
 }
 
-/* Game Messages */
+.status-indicator.connecting {
+    background: #ffff00;
+    animation: pulse 1s infinite;
+}
+
+.status-indicator.connected {
+    background: #00ff00;
+}
+
+.status-indicator.error {
+    background: #ff0000;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.game-area {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #2a2a2a;
+    padding: 20px;
+}
+
+#gameCanvas {
+    border: 2px solid #444;
+    background: #2a2a2a;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.leaderboard-panel {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    width: 250px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 15px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.leaderboard-panel h3 {
+    margin: 0 0 10px 0;
+    color: #fff;
+    text-align: center;
+}
+
+.leaderboard-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.controls-info {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 15px;
+}
+
+.controls-panel h4 {
+    margin: 0 0 10px 0;
+    color: #fff;
+}
+
+.control-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 5px;
+    color: #ccc;
+}
+
+kbd {
+    background: #333;
+    color: #fff;
+    padding: 2px 6px;
+    border-radius: 3px;
+    border: 1px solid #555;
+    font-family: monospace;
+    font-size: 11px;
+}
+
 .game-messages {
     position: fixed;
-    top: 20px;
+    top: 50%;
     left: 50%;
-    transform: translateX(-50%);
+    transform: translate(-50%, -50%);
     z-index: 1000;
     pointer-events: none;
 }
 
 .game-message {
-    background: rgba(0, 0, 0, 0.8);
-    color: #ffffff;
-    padding: 10px 20px;
-    margin: 5px 0;
-    border-radius: 5px;
-    font-weight: bold;
+    background: rgba(0, 0, 0, 0.9);
+    color: #fff;
+    padding: 15px 25px;
+    border-radius: 8px;
+    border: 2px solid #444;
+    font-size: 18px;
     text-align: center;
-    animation: messageSlideIn 0.3s ease-out;
+    margin-bottom: 10px;
+    animation: fadeInOut 0.3s ease;
 }
 
-@keyframes messageSlideIn {
+@keyframes fadeInOut {
     from {
         opacity: 0;
-        transform: translateY(-20px);
+        transform: scale(0.8);
     }
     to {
         opacity: 1;
-        transform: translateY(0);
+        transform: scale(1);
     }
 }
 
-/* Tank Health Bars (rendered on canvas) */
-.tank-health-overlay {
-    position: absolute;
-    pointer-events: none;
-    z-index: 10;
-}
-
-/* Respawn Timer */
-.respawn-timer {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(0, 0, 0, 0.9);
-    color: #ffffff;
-    padding: 2rem;
-    border-radius: 15px;
-    border: 3px solid #ff4444;
-    text-align: center;
-    z-index: 150;
-}
-
-.respawn-timer h3 {
-    color: #ff4444;
-    margin-bottom: 1rem;
-    font-size: 1.5rem;
-}
-
-.timer-display {
-    font-size: 3rem;
-    font-weight: bold;
-    color: #00ff88;
-}
-
-/* Mobile Responsive */
+/* Responsive design */
 @media (max-width: 768px) {
     .game-hud {
-        padding: 0.5rem 1rem;
-        height: 60px;
+        flex-direction: column;
+        gap: 10px;
+        padding: 10px;
+    }
+    
+    .hud-left, .hud-center, .hud-right {
+        flex: none;
+        text-align: center;
     }
     
     .player-stats {
-        gap: 1rem;
-    }
-    
-    .stat-item {
-        font-size: 0.8rem;
-    }
-    
-    .health-bar {
-        width: 60px;
-        height: 8px;
+        justify-content: center;
     }
     
     .leaderboard-panel {
-        width: 200px;
-        right: 10px;
-        top: 70px;
+        display: none;
     }
     
     .controls-info {
-        bottom: 10px;
-        left: 10px;
+        display: none;
     }
-    
-    .controls-panel {
-        padding: 0.5rem;
-        min-width: 150px;
-    }
-    
-    #gameCanvas {
-        max-width: 95vw;
-        max-height: 70vh;
-    }
-}
-
-/* Animation for tank explosions */
-@keyframes explosion {
-    0% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.5); opacity: 0.8; }
-    100% { transform: scale(2); opacity: 0; }
-}
-
-.explosion-effect {
-    animation: explosion 0.5s ease-out;
-}
-
-/* Bullet trail effects */
-@keyframes bulletTrail {
-    0% { opacity: 1; }
-    100% { opacity: 0; }
-}
-
-.bullet-trail {
-    animation: bulletTrail 0.2s ease-out;
 }

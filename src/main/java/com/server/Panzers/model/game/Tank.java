@@ -19,6 +19,7 @@ public class Tank {
     private boolean isMoving;
     private long lastShotTime;
     private boolean isAlive;
+    private double angle; // rotation angle in radians
 
     // Constants
     public static final int MAX_HEALTH = 100;
@@ -41,6 +42,7 @@ public class Tank {
         this.isMoving = false;
         this.lastShotTime = 0;
         this.isAlive = true;
+        this.angle = 0; // facing right initially
     }
 
     public Tank(String playerId, double x, double y, String color) {
@@ -250,5 +252,30 @@ public class Tank {
 
     public void setLastShotTime(long lastShotTime) {
         this.lastShotTime = lastShotTime;
+    }
+
+    public double getAngle() {
+        return angle;
+    }
+
+    public void setAngle(double angle) {
+        this.angle = angle;
+    }
+
+    // Update direction based on angle
+    public void updateDirectionFromAngle() {
+        double normalizedAngle = angle;
+        while (normalizedAngle < 0) normalizedAngle += Math.PI * 2;
+        while (normalizedAngle >= Math.PI * 2) normalizedAngle -= Math.PI * 2;
+        
+        if (normalizedAngle >= 7 * Math.PI / 4 || normalizedAngle < Math.PI / 4) {
+            this.direction = Direction.RIGHT;
+        } else if (normalizedAngle >= Math.PI / 4 && normalizedAngle < 3 * Math.PI / 4) {
+            this.direction = Direction.DOWN;
+        } else if (normalizedAngle >= 3 * Math.PI / 4 && normalizedAngle < 5 * Math.PI / 4) {
+            this.direction = Direction.LEFT;
+        } else {
+            this.direction = Direction.UP;
+        }
     }
 }

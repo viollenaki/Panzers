@@ -111,16 +111,37 @@
             // Проверяем, что все библиотеки загружены
             if (typeof SockJS === 'undefined') {
                 console.error('SockJS library not loaded!');
+                document.getElementById('statusText').textContent = 'Failed to load SockJS';
                 return;
             }
             if (typeof StompJs === 'undefined') {
                 console.error('STOMP library not loaded!');
+                document.getElementById('statusText').textContent = 'Failed to load STOMP';
+                return;
+            }
+            if (typeof TankGame === 'undefined') {
+                console.error('TankGame class not loaded!');
+                document.getElementById('statusText').textContent = 'Failed to load TankGame';
                 return;
             }
             
-            console.log('Initializing Tank Game...');
+            console.log('All libraries loaded successfully, initializing Tank Game...');
             // Инициализируем игру
-            window.tankGame = new TankGame();
+            try {
+                window.tankGame = new TankGame();
+                console.log('Tank Game initialized successfully');
+            } catch (error) {
+                console.error('Error initializing Tank Game:', error);
+                document.getElementById('statusText').textContent = 'Game initialization failed';
+            }
+        });
+        
+        // Обработка ошибок загрузки скриптов
+        window.addEventListener('error', function(e) {
+            if (e.target.tagName === 'SCRIPT') {
+                console.error('Failed to load script:', e.target.src);
+                document.getElementById('statusText').textContent = 'Script loading failed';
+            }
         });
     </script>
 </body>

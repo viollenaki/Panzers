@@ -21,6 +21,7 @@ public class PlayerActionDTO {
         private boolean isMoving;
         private String playerName;
         private String color;
+        private double angle; // Add angle support for smooth rotation
 
         // Constructors
         public ActionData() {
@@ -90,6 +91,14 @@ public class PlayerActionDTO {
 
         public void setColor(String color) {
             this.color = color;
+        }
+
+        public double getAngle() {
+            return angle;
+        }
+
+        public void setAngle(double angle) {
+            this.angle = angle;
         }
     }
 

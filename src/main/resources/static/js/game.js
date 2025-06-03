@@ -22,6 +22,25 @@ class TankGame {
         this.MOVE_THRESHOLD = 16; // ~60 FPS movement updates
         this.SHOOT_COOLDOWN = 500; // 500ms between shots
         
+        // Tank physics constants
+        this.MAX_SPEED = 3.0;
+        this.ACCELERATION = 0.15;
+        this.FRICTION = 0.9;
+        this.ROTATION_SPEED = 0.08; // radians per frame
+        this.MIN_SPEED_THRESHOLD = 0.1;
+        
+        // Local tank state for smooth movement
+        this.localTank = {
+            x: 0,
+            y: 0,
+            angle: 0, // rotation in radians
+            velocityX: 0,
+            velocityY: 0,
+            speed: 0,
+            targetSpeed: 0,
+            isMoving: false
+        };
+        
         this.initializeGame();
     }
 
@@ -169,8 +188,7 @@ class TankGame {
     setupKeyboardHandlers() {
         // Track key states for smooth movement
         const validKeys = [
-            'KeyW', 'KeyA', 'KeyS', 'KeyD', // Movement
-            'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', // Alternative movement
+            'KeyW', 'KeyA', 'KeyS', 'KeyD', // Movement and rotation
             'Space', 'Enter', // Shooting
             'Escape', 'KeyP', // Pause/Menu
             'KeyR' // Reload
@@ -237,11 +255,11 @@ class TankGame {
     }
 
     isMovementKey(keyCode) {
-        return ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(keyCode);
+        return ['KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(keyCode);
     }
 
     hasActiveMovementKeys() {
-        const movementKeys = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+        const movementKeys = ['KeyW', 'KeyA', 'KeyS', 'KeyD'];
         return movementKeys.some(key => this.keyStates[key]);
     }
 
@@ -249,6 +267,7 @@ class TankGame {
         if (this.movementInterval) return; // Already moving
         
         this.movementInterval = setInterval(() => {
+            this.updateTankPhysics();
             this.handleMovement();
         }, this.MOVE_THRESHOLD);
     }
@@ -259,25 +278,95 @@ class TankGame {
             this.movementInterval = null;
         }
         
-        // Send stop action to server
-        if (this.playerTank) {
-            this.playerTank.isMoving = false;
-            this.sendPlayerAction('PLAYER_STOP', {
-                x: this.playerTank.x,
-                y: this.playerTank.y,
-                direction: this.playerTank.direction,
-                isMoving: false
-            });
-        }
+        // Don't immediately stop - let physics handle deceleration
+        this.localTank.targetSpeed = 0;
     }
 
     stopAllMovement() {
         // Emergency stop - clear all movement states
-        const movementKeys = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+        const movementKeys = ['KeyW', 'KeyA', 'KeyS', 'KeyD'];
         movementKeys.forEach(key => {
             this.keyStates[key] = false;
         });
         this.stopMovement();
+        
+        // Force stop for emergency
+        this.localTank.velocityX = 0;
+        this.localTank.velocityY = 0;
+        this.localTank.speed = 0;
+        this.localTank.targetSpeed = 0;
+    }
+
+    updateTankPhysics() {
+        if (!this.localTank) return;
+        
+        // Handle rotation
+        let isRotating = false;
+        if (this.keyStates['KeyA']) {
+            this.localTank.angle -= this.ROTATION_SPEED;
+            isRotating = true;
+        }
+        if (this.keyStates['KeyD']) {
+            this.localTank.angle += this.ROTATION_SPEED;
+            isRotating = true;
+        }
+        
+        // Normalize angle to 0-2π range
+        this.localTank.angle = this.normalizeAngle(this.localTank.angle);
+        
+        // Handle forward/backward movement
+        if (this.keyStates['KeyW']) {
+            this.localTank.targetSpeed = this.MAX_SPEED;
+        } else if (this.keyStates['KeyS']) {
+            this.localTank.targetSpeed = -this.MAX_SPEED * 0.7; // Reverse is slower
+        } else {
+            this.localTank.targetSpeed = 0;
+        }
+        
+        // Apply acceleration/deceleration
+        const speedDiff = this.localTank.targetSpeed - this.localTank.speed;
+        this.localTank.speed += speedDiff * this.ACCELERATION;
+        
+        // Apply friction when not accelerating
+        if (Math.abs(this.localTank.targetSpeed) < 0.1) {
+            this.localTank.speed *= this.FRICTION;
+        }
+        
+        // Stop very small movements
+        if (Math.abs(this.localTank.speed) < this.MIN_SPEED_THRESHOLD) {
+            this.localTank.speed = 0;
+        }
+        
+        // Calculate velocity components based on angle and speed
+        this.localTank.velocityX = Math.cos(this.localTank.angle) * this.localTank.speed;
+        this.localTank.velocityY = Math.sin(this.localTank.angle) * this.localTank.speed;
+        
+        // Update position
+        this.localTank.x += this.localTank.velocityX;
+        this.localTank.y += this.localTank.velocityY;
+        
+        // Boundary checking
+        const halfSize = this.TANK_SIZE / 2;
+        this.localTank.x = Math.max(halfSize, Math.min(this.CANVAS_WIDTH - halfSize, this.localTank.x));
+        this.localTank.y = Math.max(halfSize, Math.min(this.CANVAS_HEIGHT - halfSize, this.localTank.y));
+        
+        // Update movement state
+        this.localTank.isMoving = Math.abs(this.localTank.speed) > this.MIN_SPEED_THRESHOLD || isRotating;
+    }
+
+    normalizeAngle(angle) {
+        while (angle < 0) angle += Math.PI * 2;
+        while (angle >= Math.PI * 2) angle -= Math.PI * 2;
+        return angle;
+    }
+
+    angleToDirection(angle) {
+        // Convert angle to 8-directional system for server compatibility
+        const normalizedAngle = this.normalizeAngle(angle);
+        const directions = ['RIGHT', 'DOWN', 'LEFT', 'UP'];
+        const sectorAngle = Math.PI / 2;
+        const sector = Math.round(normalizedAngle / sectorAngle) % 4;
+        return directions[sector];
     }
 
     handleMovement() {
@@ -288,51 +377,50 @@ class TankGame {
         
         this.lastMoveTime = now;
         
-        let direction = null;
-        let isMoving = false;
-        let newX = this.playerTank.x;
-        let newY = this.playerTank.y;
-        const speed = this.playerTank.speed || 2;
-        
-        // Determine movement direction based on pressed keys
-        if (this.keyStates['KeyW'] || this.keyStates['ArrowUp']) {
-            direction = 'UP';
-            newY -= speed;
-            isMoving = true;
-        } else if (this.keyStates['KeyS'] || this.keyStates['ArrowDown']) {
-            direction = 'DOWN';
-            newY += speed;
-            isMoving = true;
-        } else if (this.keyStates['KeyA'] || this.keyStates['ArrowLeft']) {
-            direction = 'LEFT';
-            newX -= speed;
-            isMoving = true;
-        } else if (this.keyStates['KeyD'] || this.keyStates['ArrowRight']) {
-            direction = 'RIGHT';
-            newX += speed;
-            isMoving = true;
+        // Sync local tank with player tank if needed
+        if (!this.localTank.initialized && this.playerTank) {
+            this.localTank.x = this.playerTank.x;
+            this.localTank.y = this.playerTank.y;
+            this.localTank.angle = this.directionToAngle(this.playerTank.direction || 'UP');
+            this.localTank.initialized = true;
         }
         
-        // Client-side boundary checking
-        const halfSize = this.TANK_SIZE / 2;
-        newX = Math.max(halfSize, Math.min(this.CANVAS_WIDTH - halfSize, newX));
-        newY = Math.max(halfSize, Math.min(this.CANVAS_HEIGHT - halfSize, newY));
-        
-        if (direction && isMoving) {
-            // Update local tank position for smooth movement (client-side prediction)
-            this.playerTank.x = newX;
-            this.playerTank.y = newY;
-            this.playerTank.direction = direction;
-            this.playerTank.isMoving = isMoving;
+        if (this.localTank.isMoving) {
+            // Update player tank for immediate feedback
+            this.playerTank.x = this.localTank.x;
+            this.playerTank.y = this.localTank.y;
+            this.playerTank.direction = this.angleToDirection(this.localTank.angle);
+            this.playerTank.isMoving = this.localTank.isMoving;
             
-            // Send movement to server with proper direction string
+            // Send movement to server
             this.sendPlayerAction('PLAYER_MOVE', {
-                x: newX,
-                y: newY,
-                direction: direction, // Now sending as string
-                isMoving: isMoving
+                x: this.localTank.x,
+                y: this.localTank.y,
+                direction: this.angleToDirection(this.localTank.angle),
+                isMoving: this.localTank.isMoving,
+                angle: this.localTank.angle // Send angle for better synchronization
+            });
+        } else if (this.playerTank.isMoving) {
+            // Send stop signal
+            this.playerTank.isMoving = false;
+            this.sendPlayerAction('PLAYER_STOP', {
+                x: this.localTank.x,
+                y: this.localTank.y,
+                direction: this.angleToDirection(this.localTank.angle),
+                isMoving: false,
+                angle: this.localTank.angle
             });
         }
+    }
+
+    directionToAngle(direction) {
+        const directionMap = {
+            'UP': -Math.PI / 2,
+            'DOWN': Math.PI / 2,
+            'LEFT': Math.PI,
+            'RIGHT': 0
+        };
+        return directionMap[direction] || 0;
     }
 
     shoot() {
@@ -426,14 +514,16 @@ class TankGame {
             const serverTank = gameState.tanks.find(tank => tank.playerId === this.sessionId);
             if (serverTank) {
                 // Only update position if there's significant difference (anti-jitter)
-                const threshold = 5; // pixels
-                if (this.playerTank) {
-                    const dx = Math.abs(this.playerTank.x - serverTank.x);
-                    const dy = Math.abs(this.playerTank.y - serverTank.y);
+                const threshold = 10; // pixels
+                if (this.playerTank && this.localTank.initialized) {
+                    const dx = Math.abs(this.localTank.x - serverTank.x);
+                    const dy = Math.abs(this.localTank.y - serverTank.y);
                     
                     if (dx > threshold || dy > threshold) {
-                        this.playerTank.x = serverTank.x;
-                        this.playerTank.y = serverTank.y;
+                        // Server correction
+                        this.localTank.x = serverTank.x;
+                        this.localTank.y = serverTank.y;
+                        this.localTank.angle = this.directionToAngle(serverTank.direction);
                     }
                     
                     // Always update other properties
@@ -442,6 +532,12 @@ class TankGame {
                     this.playerTank.isAlive = serverTank.isAlive;
                 } else {
                     this.playerTank = serverTank;
+                    if (!this.localTank.initialized) {
+                        this.localTank.x = serverTank.x;
+                        this.localTank.y = serverTank.y;
+                        this.localTank.angle = this.directionToAngle(serverTank.direction);
+                        this.localTank.initialized = true;
+                    }
                 }
             }
         }
@@ -554,38 +650,44 @@ class TankGame {
 
     drawTank(tank) {
         const ctx = this.ctx;
-        const x = tank.x;
-        const y = tank.y;
+        let x, y, angle;
+        
+        // Use local tank data for our own tank for smooth movement
+        if (tank.playerId === this.sessionId && this.localTank.initialized) {
+            x = this.localTank.x;
+            y = this.localTank.y;
+            angle = this.localTank.angle;
+        } else {
+            x = tank.x;
+            y = tank.y;
+            angle = this.directionToAngle(tank.direction || 'UP');
+        }
+        
         const size = this.TANK_SIZE;
-        
-        // Tank body
-        ctx.fillStyle = tank.playerId === this.sessionId ? '#00ff88' : (tank.color || '#ff4444');
-        ctx.fillRect(x - size/2, y - size/2, size, size);
-        
-        // Tank direction indicator (barrel)
-        ctx.fillStyle = '#333333';
-        const barrelLength = size * 0.6;
-        const barrelWidth = 4;
         
         ctx.save();
         ctx.translate(x, y);
+        ctx.rotate(angle);
         
-        switch(tank.direction) {
-            case 'UP':
-                ctx.rotate(0);
-                break;
-            case 'DOWN':
-                ctx.rotate(Math.PI);
-                break;
-            case 'LEFT':
-                ctx.rotate(-Math.PI/2);
-                break;
-            case 'RIGHT':
-                ctx.rotate(Math.PI/2);
-                break;
-        }
+        // Tank body
+        ctx.fillStyle = tank.playerId === this.sessionId ? '#00ff88' : (tank.color || '#ff4444');
+        ctx.fillRect(-size/2, -size/2, size, size);
         
+        // Tank barrel
+        ctx.fillStyle = '#333333';
+        const barrelLength = size * 0.8;
+        const barrelWidth = 6;
         ctx.fillRect(-barrelWidth/2, -size/2 - barrelLength, barrelWidth, barrelLength);
+        
+        // Tank direction indicator (small triangle)
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(0, -size/2);
+        ctx.lineTo(-4, -size/2 + 8);
+        ctx.lineTo(4, -size/2 + 8);
+        ctx.closePath();
+        ctx.fill();
+        
         ctx.restore();
         
         // Health bar for other players
@@ -598,6 +700,23 @@ class TankGame {
         ctx.font = '12px Arial';
         ctx.textAlign = 'center';
         ctx.fillText(tank.playerId.substring(0, 8), x, y + size/2 + 15);
+        
+        // Speed indicator for debugging (only for our tank)
+        if (tank.playerId === this.sessionId && this.localTank.initialized) {
+            ctx.fillStyle = '#ffff00';
+            ctx.font = '10px Arial';
+            ctx.fillText(`Speed: ${this.localTank.speed.toFixed(1)}`, x, y + size/2 + 28);
+        }
+    }
+
+    drawBullet(bullet) {
+        this.ctx.fillStyle = '#ffff00';
+        this.ctx.fillRect(
+            bullet.x - this.BULLET_SIZE / 2,
+            bullet.y - this.BULLET_SIZE / 2,
+            this.BULLET_SIZE,
+            this.BULLET_SIZE
+        );
     }
 
     drawHealthBar(x, y, health) {
